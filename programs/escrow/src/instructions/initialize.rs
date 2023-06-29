@@ -1,10 +1,9 @@
 use crate::state::escrow::*;
+use crate::seeds::*;
 
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
-
-const AUTHORITY_SEED: &[u8] = b"authority";
 
 
 pub fn initialize(
@@ -64,7 +63,7 @@ pub struct Initialize<'info> {
     pub mint: Account<'info, Mint>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(
-        seeds = [b"authority".as_ref()],
+        seeds = [AUTHORITY_SEED.as_ref()],
         bump,
     )]
     pub vault_authority: AccountInfo<'info>,
@@ -83,7 +82,7 @@ pub struct Initialize<'info> {
     pub initializer_receive_token_account: Account<'info, TokenAccount>,
     #[account(
         init,
-        seeds = [b"state".as_ref(), &escrow_seed.to_le_bytes()],
+        seeds = [ESCROW_STATE_SEED.as_ref(), &escrow_seed.to_le_bytes()],
         bump,
         payer = initializer,
         space = EscrowState::space()
