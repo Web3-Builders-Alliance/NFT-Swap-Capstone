@@ -1,0 +1,23 @@
+[package]
+name = "escrow"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "escrow"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = { git = "https://github.com/coral-xyz/anchor.git", features=["init-if-needed"] }
+anchor-spl = { git = "https://github.com/coral-xyz/anchor.git" }
+spl-token = {version = "3.3.0", features = ["no-entrypoint"]}
+winnow = "= 0.4.1"
+toml_datetime = "=0.6.1"
