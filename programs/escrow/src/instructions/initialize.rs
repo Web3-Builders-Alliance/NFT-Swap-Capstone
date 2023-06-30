@@ -3,7 +3,10 @@ use crate::state::*;
 
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::metadata::MasterEditionAccount;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
+
+const METADATA_ID: &[u8] = b"metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
 
 pub fn initialize(
     ctx: Context<Initialize>,
@@ -60,6 +63,12 @@ pub struct Initialize<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     pub mint: Account<'info, Mint>,
+    #[account(
+        seeds = [b"metadata",  METADATA_ID, mint.key().as_ref(), b"edition" ], 
+        bump, 
+        seeds::program =  METADATA_ID
+    )]
+    pub master_edition: Account<'info, MasterEditionAccount>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(
         seeds = [AUTHORITY_SEED],

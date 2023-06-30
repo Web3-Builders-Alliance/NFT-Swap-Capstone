@@ -1,13 +1,12 @@
-
 use anchor_lang::prelude::*;
 
 use instructions::*;
 
-pub mod state;
 pub mod instructions;
 pub mod seeds;
+pub mod state;
 
-declare_id!("HtvmD59Tg2naK4QSjbFBr6BZWg8MCqutWAC7rB2pExAm");
+declare_id!("9FmWRCsKPpFsUxcs9nV2K4GVgHTnVXeEfT4uMK3vuurL");
 
 #[program]
 pub mod anchor_escrow {
@@ -19,7 +18,7 @@ pub mod anchor_escrow {
         initializer_amount: u64,
         taker_amount: u64,
     ) -> Result<()> {
-        instructions::initialize::initialize(ctx,random_seed,initializer_amount,taker_amount)
+        instructions::initialize::initialize(ctx, random_seed, initializer_amount, taker_amount)
     }
 
     pub fn cancel(ctx: Context<Cancel>) -> Result<()> {

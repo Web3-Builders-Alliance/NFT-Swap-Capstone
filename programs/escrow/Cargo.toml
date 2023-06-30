@@ -17,7 +17,7 @@ default = []
 
 [dependencies]
 anchor-lang = { git = "https://github.com/coral-xyz/anchor.git", features=["init-if-needed"] }
-anchor-spl = { git = "https://github.com/coral-xyz/anchor.git" }
+anchor-spl = { git = "https://github.com/coral-xyz/anchor.git", features=["metadata"]}
 spl-token = {version = "3.3.0", features = ["no-entrypoint"]}
 winnow = "= 0.4.1"
 toml_datetime = "=0.6.1"

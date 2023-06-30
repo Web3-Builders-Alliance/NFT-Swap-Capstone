@@ -1,14 +1,13 @@
 [features]
 seeds = false
-skip-lint = false
 [programs.localnet]
-escrow = "HtvmD59Tg2naK4QSjbFBr6BZWg8MCqutWAC7rB2pExAm"
+escrow = "9FmWRCsKPpFsUxcs9nV2K4GVgHTnVXeEfT4uMK3vuurL"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "Localnet"
+cluster = "localnet"
 wallet = "./wallet.json"
 
 [scripts]
