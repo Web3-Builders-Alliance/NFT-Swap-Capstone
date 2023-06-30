@@ -7,7 +7,7 @@ pub mod state;
 pub mod instructions;
 pub mod seeds;
 
-declare_id!("J7w3wqRVTzs4CcSA6MRTtt584oaykVTbqQDxMtgbkQhL");
+declare_id!("HtvmD59Tg2naK4QSjbFBr6BZWg8MCqutWAC7rB2pExAm");
 
 #[program]
 pub mod anchor_escrow {

@@ -2,14 +2,14 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
-escrow = "J7w3wqRVTzs4CcSA6MRTtt584oaykVTbqQDxMtgbkQhL"
+escrow = "HtvmD59Tg2naK4QSjbFBr6BZWg8MCqutWAC7rB2pExAm"
 
 [registry]
-url = "https://api.apr.dev"
+url = "https://anchor.projectserum.com"
 
 [provider]
 cluster = "Localnet"
-wallet = "/home/me/.config/solana/id.json"
+wallet = "./wallet.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

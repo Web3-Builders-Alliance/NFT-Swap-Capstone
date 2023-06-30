@@ -1,10 +1,9 @@
-use crate::state::escrow::*;
 use crate::seeds::*;
+use crate::state::*;
 
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
-
 
 pub fn initialize(
     ctx: Context<Initialize>,
@@ -63,7 +62,7 @@ pub struct Initialize<'info> {
     pub mint: Account<'info, Mint>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(
-        seeds = [AUTHORITY_SEED.as_ref()],
+        seeds = [AUTHORITY_SEED],
         bump,
     )]
     pub vault_authority: AccountInfo<'info>,
