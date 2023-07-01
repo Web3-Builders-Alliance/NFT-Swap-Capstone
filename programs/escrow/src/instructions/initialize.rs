@@ -6,7 +6,7 @@ use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::metadata::MasterEditionAccount;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
 
-const METADATA_ID: &[u8] = b"metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
+// const METADATA_ID: &[u8] = b"metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
 
 pub fn initialize(
     ctx: Context<Initialize>,
@@ -33,11 +33,17 @@ pub fn initialize(
         Pubkey::find_program_address(&[AUTHORITY_SEED], ctx.program_id);
     ctx.accounts.escrow_state.vault_authority_bump = vault_authority_bump;
 
-    token::transfer_checked(
-        ctx.accounts.into_transfer_to_pda_context(),
-        ctx.accounts.escrow_state.initializer_amount,
-        ctx.accounts.mint.decimals,
-    )?;
+    if ctx.accounts.mint.supply != 0 || ctx.accounts.mint.decimals != 0 {
+        panic!("Not an nft");
+    }
+
+    token::transfer_checked(ctx.accounts.into_transfer_to_pda_context(), 1, 0)?;
+
+    // token::transfer_checked(
+    //     ctx.accounts.into_transfer_to_pda_context(),
+    //     ctx.accounts.escrow_state.initializer_amount,
+    //     ctx.accounts.mint.decimals,
+    // )?;
 
     Ok(())
 }
@@ -63,11 +69,11 @@ pub struct Initialize<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     pub mint: Account<'info, Mint>,
-    #[account(
-        seeds = [b"metadata",  METADATA_ID, mint.key().as_ref(), b"edition" ], 
-        bump, 
-        seeds::program =  METADATA_ID
-    )]
+    // #[account(
+    //     seeds = [b"metadata",  METADATA_ID, mint.key().as_ref(), b"edition" ],
+    //     bump,
+    //     seeds::program =  METADATA_ID
+    // )]
     pub master_edition: Account<'info, MasterEditionAccount>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(
