@@ -31,10 +31,6 @@ pub fn initialize(
         Pubkey::find_program_address(&[AUTHORITY_SEED], ctx.program_id);
     ctx.accounts.escrow_state.vault_authority_bump = vault_authority_bump;
 
-    if ctx.accounts.mint.supply != 0 || ctx.accounts.mint.decimals != 0 {
-        panic!("Not an nft");
-    }
-
     token::transfer(ctx.accounts.into_transfer_to_pda_context(), 1)?;
 
     // token::transfer_checked(

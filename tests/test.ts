@@ -1,41 +1,64 @@
+import * as anchor from "@coral-xyz/anchor";
+import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
+import { IDL } from "../target/types/anchor_escrow";
 import {
   Metaplex,
   keypairIdentity,
   bundlrStorage,
 } from "@metaplex-foundation/js";
-import { Connection, Keypair, Commitment } from "@solana/web3.js";
+import {
+  PublicKey,
+  SystemProgram,
+  Connection,
+  Commitment,
+  TransactionMessage,
+  VersionedTransaction,
+  Keypair,
+} from "@solana/web3.js";
+import {
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  createMint,
+  createAccount,
+  mintTo,
+  getAccount,
+} from "@solana/spl-token";
+import { assert } from "chai";
 
 const fs = require("fs");
 
-// Load a local keypair.
-const keypairFile = fs.readFileSync("./wallet.json");
-const wallet = Keypair.fromSecretKey(
-  Buffer.from(JSON.parse(keypairFile.toString()))
-);
+//J8yRFJACioJ2UE4Hw4UmUnm3pij8paXAq49P4ZYtGX4y
+const alice = require("./alice.json");
+//3f1GZhhG1McwPPp5PSnsZ5ZDFKQvhQpquasfbFnSQHzN
+const bob = require("./bob.json");
 
-console.log("wallet", wallet.publicKey.toBase58());
+describe("anchor-escrow", () => {
+  const commitment: Commitment = "processed"; // processed, confirmed, finalized
+  const connection = new Connection("http://localhost:8899", {
+    commitment,
+  });
 
-// const connection = new Connection(clusterApiUrl("devnet"));
-const commitment: Commitment = "processed"; // processed, confirmed, finalized
+  const payer = Keypair.fromSecretKey(new Uint8Array(alice));
+  const initializer = Keypair.fromSecretKey(new Uint8Array(alice));
+  const taker = Keypair.fromSecretKey(new Uint8Array(bob));
+  const mintAuthority = anchor.web3.Keypair.generate();
 
-const connection = new Connection("https://api.devnet.solana.com", {
-  commitment,
-  wsEndpoint: "wss://api.devnet.solana.com/",
-});
+  let nftA = null;
+  let nftB = null;
 
-const metaplex = Metaplex.make(connection)
-  .use(keypairIdentity(wallet))
-  .use(bundlrStorage());
+  const metaplexA = Metaplex.make(connection)
+    .use(keypairIdentity(payer))
+    .use(bundlrStorage());
 
-(async () => {
-  try {
-    const { nft } = await metaplex.nfts().create({
+  before(async () => {
+    const { nft: nft1 } = await metaplexA.nfts().create({
       uri: "https://arweave.net/123",
-      name: "My NFT",
+      name: "My NFT A",
       sellerFeeBasisPoints: 500, // Represents 5.00%.
     });
-    console.log("nft", nft);
-  } catch (err) {
-    console.log("err", err);
-  }
-})();
+
+    nftA = nft1;
+  });
+
+  it("Initialize program state", async () => {});
+});

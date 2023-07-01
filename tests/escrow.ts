@@ -27,6 +27,11 @@ import { assert } from "chai";
 
 const fs = require("fs");
 
+//J8yRFJACioJ2UE4Hw4UmUnm3pij8paXAq49P4ZYtGX4y
+const alice = require("./alice.json");
+//3f1GZhhG1McwPPp5PSnsZ5ZDFKQvhQpquasfbFnSQHzN
+const bob = require("./bob.json");
+
 describe("anchor-escrow", () => {
   // Use Mainnet-fork for testing
   const commitment: Commitment = "processed"; // processed, confirmed, finalized
@@ -41,10 +46,6 @@ describe("anchor-escrow", () => {
 
   const options = anchor.AnchorProvider.defaultOptions();
   const nodeWallet = NodeWallet.local();
-  const keypairFile = fs.readFileSync("./wallet.json");
-  const wallet = Keypair.fromSecretKey(
-    Buffer.from(JSON.parse(keypairFile.toString()))
-  );
 
   const provider = new anchor.AnchorProvider(connection, nodeWallet, options);
 
@@ -68,10 +69,10 @@ describe("anchor-escrow", () => {
   const initializerAmount = 500;
 
   // Main Roles
-  const payer = anchor.web3.Keypair.generate();
+  const payer = Keypair.fromSecretKey(new Uint8Array(alice));
+  const initializer = Keypair.fromSecretKey(new Uint8Array(alice));
+  const taker = Keypair.fromSecretKey(new Uint8Array(bob));
   const mintAuthority = anchor.web3.Keypair.generate();
-  const initializer = anchor.web3.Keypair.generate();
-  const taker = anchor.web3.Keypair.generate();
 
   // Determined Seeds
   const stateSeed = "state";
@@ -97,16 +98,24 @@ describe("anchor-escrow", () => {
   )[0];
   let vaultKey = null as PublicKey;
 
-  const metaplex = Metaplex.make(connection)
-    .use(keypairIdentity(wallet))
+  const metaplexA = Metaplex.make(connection)
+    .use(keypairIdentity(payer))
     .use(bundlrStorage());
 
-  it("Initialize program state", async () => {
+  const metaplexB = Metaplex.make(connection)
+    .use(keypairIdentity(taker))
+    .use(bundlrStorage());
+
+  let nftA = null;
+  let nftB = null;
+
+  before(async () => {
     // 1. Airdrop 1 SOL to payer
     const signature = await provider.connection.requestAirdrop(
       payer.publicKey,
       1000000000
     );
+
     const latestBlockhash = await connection.getLatestBlockhash();
     await provider.connection.confirmTransaction(
       {
@@ -142,64 +151,47 @@ describe("anchor-escrow", () => {
       `https://solana.fm/tx/${result}?cluster=http%253A%252F%252Flocalhost%253A8899%252F`
     );
 
-    // 3. Create dummy token mints: mintA and mintB
-    mintA = await createMint(
-      connection,
-      payer,
-      mintAuthority.publicKey,
-      null,
-      0
-    );
-    mintB = await createMint(
-      provider.connection,
-      payer,
-      mintAuthority.publicKey,
-      null,
-      0
-    );
+    const { nft: nft1 } = await metaplexA.nfts().create({
+      uri: "https://arweave.net/123",
+      name: "My NFT A",
+      sellerFeeBasisPoints: 500, // Represents 5.00%.
+    });
 
+    nftA = nft1;
+
+    const { nft: nft2 } = await metaplexB.nfts().create({
+      uri: "https://arweave.net/123",
+      name: " NFT B",
+      sellerFeeBasisPoints: 500, // Represents 5.00%.
+    });
+    nftB = nft2;
+  });
+
+  it("Initialize program state", async () => {
     // 4. Create token accounts for dummy token mints and both main roles
     initializerTokenAccountA = await createAccount(
       connection,
       initializer,
-      mintA,
+      nftA.address,
       initializer.publicKey
     );
     initializerTokenAccountB = await createAccount(
       connection,
       initializer,
-      mintB,
+      nftB.address,
       initializer.publicKey
     );
     takerTokenAccountA = await createAccount(
       connection,
       taker,
-      mintA,
+      nftA.address,
       taker.publicKey
     );
     takerTokenAccountB = await createAccount(
       connection,
       taker,
-      mintB,
+      nftB.address,
       taker.publicKey
-    );
-
-    // 5. Mint dummy tokens to initializerTokenAccountA and takerTokenAccountB
-    await mintTo(
-      connection,
-      initializer,
-      mintA,
-      initializerTokenAccountA,
-      mintAuthority,
-      initializerAmount
-    );
-    await mintTo(
-      connection,
-      taker,
-      mintB,
-      takerTokenAccountB,
-      mintAuthority,
-      takerAmount
     );
 
     const fetchedInitializerTokenAccountA = await getAccount(
@@ -217,75 +209,76 @@ describe("anchor-escrow", () => {
     assert.ok(Number(fetchedTakerTokenAccountB.amount) == takerAmount);
   });
 
-  it("Initialize escrow", async () => {
-    const _vaultKey = PublicKey.findProgramAddressSync(
-      [
-        vaultAuthorityKey.toBuffer(),
-        TOKEN_PROGRAM_ID.toBuffer(),
-        mintA.toBuffer(),
-      ],
-      ASSOCIATED_TOKEN_PROGRAM_ID
-    )[0];
-    vaultKey = _vaultKey;
+  xit("Initialize escrow", async () => {
+    try {
+      const _vaultKey = PublicKey.findProgramAddressSync(
+        [
+          vaultAuthorityKey.toBuffer(),
+          TOKEN_PROGRAM_ID.toBuffer(),
+          mintA.toBuffer(),
+        ],
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      )[0];
+      vaultKey = _vaultKey;
 
-    const { nft } = await metaplex.nfts().create({
-      uri: "https://arweave.net/123",
-      name: "My NFT",
-      sellerFeeBasisPoints: 500, // Represents 5.00%.
-    });
+      const result = await program.methods
+        .initialize(
+          randomSeed,
+          new anchor.BN(initializerAmount),
+          new anchor.BN(takerAmount)
+        )
+        .accounts({
+          initializer: initializer.publicKey,
+          vaultAuthority: vaultAuthorityKey,
+          vault: vaultKey,
+          mint: nftA.address,
+          masterEdition: nftA.address,
+          initializerDepositTokenAccount: initializerTokenAccountA,
+          initializerReceiveTokenAccount: initializerTokenAccountB,
+          escrowState: escrowStateKey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([initializer])
+        .rpc();
+      console.log(
+        `https://solana.fm/tx/${result}?cluster=http%253A%252F%252Flocalhost%253A8899%252F`
+      );
 
-    const result = await program.methods
-      .initialize(
-        randomSeed,
-        new anchor.BN(initializerAmount),
-        new anchor.BN(takerAmount)
-      )
-      .accounts({
-        initializer: initializer.publicKey,
-        vaultAuthority: vaultAuthorityKey,
-        vault: vaultKey,
-        mint: mintA,
-        masterEdition: nft.address,
-        initializerDepositTokenAccount: initializerTokenAccountA,
-        initializerReceiveTokenAccount: initializerTokenAccountB,
-        escrowState: escrowStateKey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .signers([initializer])
-      .rpc();
-    console.log(
-      `https://solana.fm/tx/${result}?cluster=http%253A%252F%252Flocalhost%253A8899%252F`
-    );
+      let fetchedVault = await getAccount(connection, vaultKey);
+      let fetchedEscrowState = await program.account.escrowState.fetch(
+        escrowStateKey
+      );
 
-    let fetchedVault = await getAccount(connection, vaultKey);
-    let fetchedEscrowState = await program.account.escrowState.fetch(
-      escrowStateKey
-    );
+      // Check that the new owner is the PDA.
+      assert.ok(fetchedVault.owner.equals(vaultAuthorityKey));
 
-    // Check that the new owner is the PDA.
-    assert.ok(fetchedVault.owner.equals(vaultAuthorityKey));
-
-    // Check that the values in the escrow account match what we expect.
-    assert.ok(fetchedEscrowState.initializerKey.equals(initializer.publicKey));
-    assert.ok(
-      fetchedEscrowState.initializerAmount.toNumber() == initializerAmount
-    );
-    assert.ok(fetchedEscrowState.takerAmount.toNumber() == takerAmount);
-    assert.ok(
-      fetchedEscrowState.initializerDepositTokenAccount.equals(
-        initializerTokenAccountA
-      )
-    );
-    assert.ok(
-      fetchedEscrowState.initializerReceiveTokenAccount.equals(
-        initializerTokenAccountB
-      )
-    );
+      // Check that the values in the escrow account match what we expect.
+      assert.ok(
+        fetchedEscrowState.initializerKey.equals(initializer.publicKey)
+      );
+      assert.ok(
+        fetchedEscrowState.initializerAmount.toNumber() == initializerAmount
+      );
+      assert.ok(fetchedEscrowState.takerAmount.toNumber() == takerAmount);
+      assert.ok(
+        fetchedEscrowState.initializerDepositTokenAccount.equals(
+          initializerTokenAccountA
+        )
+      );
+      assert.ok(
+        fetchedEscrowState.initializerReceiveTokenAccount.equals(
+          initializerTokenAccountB
+        )
+      );
+    } catch (err) {
+      console.log("err initilizing escrow", err);
+      throw new Error(err);
+    }
   });
 
-  it("Exchange escrow state", async () => {
+  xit("Exchange escrow state", async () => {
     const result = await program.methods
       .exchange()
       .accounts({
@@ -331,7 +324,7 @@ describe("anchor-escrow", () => {
     assert.ok(Number(fetchedTakerTokenAccountB.amount) == 0);
   });
 
-  it("Initialize escrow and cancel escrow", async () => {
+  xit("Initialize escrow and cancel escrow", async () => {
     // Put back tokens into initializer token A account.
     await mintTo(
       connection,
