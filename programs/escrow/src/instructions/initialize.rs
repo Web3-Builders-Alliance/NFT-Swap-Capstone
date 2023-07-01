@@ -3,10 +3,8 @@ use crate::state::*;
 
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::metadata::MasterEditionAccount;
-use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
-
-// const METADATA_ID: &[u8] = b"metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
+use anchor_spl::metadata::{MasterEditionAccount, Metadata};
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 pub fn initialize(
     ctx: Context<Initialize>,
@@ -37,7 +35,7 @@ pub fn initialize(
         panic!("Not an nft");
     }
 
-    token::transfer_checked(ctx.accounts.into_transfer_to_pda_context(), 1, 0)?;
+    token::transfer(ctx.accounts.into_transfer_to_pda_context(), 1)?;
 
     // token::transfer_checked(
     //     ctx.accounts.into_transfer_to_pda_context(),
@@ -49,12 +47,9 @@ pub fn initialize(
 }
 
 impl<'info> Initialize<'info> {
-    fn into_transfer_to_pda_context(
-        &self,
-    ) -> CpiContext<'_, '_, '_, 'info, TransferChecked<'info>> {
-        let cpi_accounts = TransferChecked {
+    fn into_transfer_to_pda_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+        let cpi_accounts = Transfer {
             from: self.initializer_deposit_token_account.to_account_info(),
-            mint: self.mint.to_account_info(),
             to: self.vault.to_account_info(),
             authority: self.initializer.to_account_info(),
         };
@@ -69,11 +64,11 @@ pub struct Initialize<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     pub mint: Account<'info, Mint>,
-    // #[account(
-    //     seeds = [b"metadata",  METADATA_ID, mint.key().as_ref(), b"edition" ],
-    //     bump,
-    //     seeds::program =  METADATA_ID
-    // )]
+    #[account(
+        seeds = [b"metadata",  metadata_program.key().as_ref(), mint.key().as_ref(), b"edition" ],
+        bump,
+        seeds::program =  metadata_program
+    )]
     pub master_edition: Account<'info, MasterEditionAccount>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(
@@ -107,6 +102,7 @@ pub struct Initialize<'info> {
     pub rent: Sysvar<'info, Rent>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub token_program: Program<'info, Token>,
+    pub metadata_program: Program<'info, Metadata>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub associated_token_program: Program<'info, AssociatedToken>,
 }

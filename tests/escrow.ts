@@ -2,12 +2,18 @@ import * as anchor from "@coral-xyz/anchor";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { IDL } from "../target/types/anchor_escrow";
 import {
+  Metaplex,
+  keypairIdentity,
+  bundlrStorage,
+} from "@metaplex-foundation/js";
+import {
   PublicKey,
   SystemProgram,
   Connection,
   Commitment,
   TransactionMessage,
   VersionedTransaction,
+  Keypair,
 } from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
@@ -18,6 +24,8 @@ import {
   getAccount,
 } from "@solana/spl-token";
 import { assert } from "chai";
+
+const fs = require("fs");
 
 describe("anchor-escrow", () => {
   // Use Mainnet-fork for testing
@@ -32,8 +40,13 @@ describe("anchor-escrow", () => {
   // });
 
   const options = anchor.AnchorProvider.defaultOptions();
-  const wallet = NodeWallet.local();
-  const provider = new anchor.AnchorProvider(connection, wallet, options);
+  const nodeWallet = NodeWallet.local();
+  const keypairFile = fs.readFileSync("./wallet.json");
+  const wallet = Keypair.fromSecretKey(
+    Buffer.from(JSON.parse(keypairFile.toString()))
+  );
+
+  const provider = new anchor.AnchorProvider(connection, nodeWallet, options);
 
   anchor.setProvider(provider);
 
@@ -83,6 +96,10 @@ describe("anchor-escrow", () => {
     program.programId
   )[0];
   let vaultKey = null as PublicKey;
+
+  const metaplex = Metaplex.make(connection)
+    .use(keypairIdentity(wallet))
+    .use(bundlrStorage());
 
   it("Initialize program state", async () => {
     // 1. Airdrop 1 SOL to payer
@@ -211,6 +228,12 @@ describe("anchor-escrow", () => {
     )[0];
     vaultKey = _vaultKey;
 
+    const { nft } = await metaplex.nfts().create({
+      uri: "https://arweave.net/123",
+      name: "My NFT",
+      sellerFeeBasisPoints: 500, // Represents 5.00%.
+    });
+
     const result = await program.methods
       .initialize(
         randomSeed,
@@ -222,6 +245,7 @@ describe("anchor-escrow", () => {
         vaultAuthority: vaultAuthorityKey,
         vault: vaultKey,
         mint: mintA,
+        masterEdition: nft.address,
         initializerDepositTokenAccount: initializerTokenAccountA,
         initializerReceiveTokenAccount: initializerTokenAccountB,
         escrowState: escrowStateKey,
