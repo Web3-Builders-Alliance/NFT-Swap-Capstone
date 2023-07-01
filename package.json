@@ -5,7 +5,10 @@
     },
     "dependencies": {
         "@coral-xyz/anchor": "^0.27.0",
-        "@solana/spl-token": "^0.3.7"
+        "@metaplex-foundation/js": "^0.19.4",
+        "@solana/spl-token": "^0.3.7",
+        "g": "^2.0.1",
+        "ts-node": "^10.9.1"
     },
     "devDependencies": {
         "@types/bn.js": "^5.1.0",
