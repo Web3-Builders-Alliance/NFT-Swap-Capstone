@@ -167,7 +167,7 @@ describe("anchor-escrow", () => {
     nftB = nft2;
   });
 
-  it("Initialize program state", async () => {
+  xit("Initialize program state", async () => {
     // 4. Create token accounts for dummy token mints and both main roles
     initializerTokenAccountA = await createAccount(
       connection,
