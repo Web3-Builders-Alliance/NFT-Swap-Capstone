@@ -9,8 +9,8 @@ use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 pub fn initialize(
     ctx: Context<Initialize>,
     random_seed: u64,
-    initializer_amount: u64,
-    taker_amount: u64,
+    initializer_nft: Pubkey,
+    taker_nft: Pubkey,
 ) -> Result<()> {
     ctx.accounts.escrow_state.initializer_key = *ctx.accounts.initializer.key;
     ctx.accounts.escrow_state.initializer_deposit_token_account = *ctx
@@ -23,8 +23,8 @@ pub fn initialize(
         .initializer_receive_token_account
         .to_account_info()
         .key;
-    ctx.accounts.escrow_state.initializer_amount = initializer_amount;
-    ctx.accounts.escrow_state.taker_amount = taker_amount;
+    ctx.accounts.escrow_state.initializer_nft = initializer_nft;
+    ctx.accounts.escrow_state.taker_nft = taker_nft;
     ctx.accounts.escrow_state.random_seed = random_seed;
 
     let (_vault_authority, vault_authority_bump) =
@@ -32,12 +32,6 @@ pub fn initialize(
     ctx.accounts.escrow_state.vault_authority_bump = vault_authority_bump;
 
     token::transfer(ctx.accounts.into_transfer_to_pda_context(), 1)?;
-
-    // token::transfer_checked(
-    //     ctx.accounts.into_transfer_to_pda_context(),
-    //     ctx.accounts.escrow_state.initializer_amount,
-    //     ctx.accounts.mint.decimals,
-    // )?;
 
     Ok(())
 }
@@ -54,7 +48,7 @@ impl<'info> Initialize<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(escrow_seed: u64, initializer_amount: u64)]
+#[instruction(escrow_seed: u64, initializer_nft: Pubkey)]
 pub struct Initialize<'info> {
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(mut)]
@@ -81,7 +75,7 @@ pub struct Initialize<'info> {
     pub vault: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
-        constraint = initializer_deposit_token_account.amount >= initializer_amount
+        constraint = initializer_deposit_token_account.amount == 1
     )]
     pub initializer_deposit_token_account: Account<'info, TokenAccount>,
     pub initializer_receive_token_account: Account<'info, TokenAccount>,

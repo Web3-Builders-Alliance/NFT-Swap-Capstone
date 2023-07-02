@@ -6,8 +6,8 @@ pub struct EscrowState {
     pub initializer_key: Pubkey,
     pub initializer_deposit_token_account: Pubkey,
     pub initializer_receive_token_account: Pubkey,
-    pub initializer_amount: u64,
-    pub taker_amount: u64,
+    pub initializer_nft: Pubkey,
+    pub taker_nft: Pubkey,
     pub vault_authority_bump: u8,
 }
 

@@ -12,16 +12,16 @@ pub fn exchange(ctx: Context<Exchange>) -> Result<()> {
 
     token::transfer_checked(
         ctx.accounts.into_transfer_to_initializer_context(),
-        ctx.accounts.escrow_state.taker_amount,
-        ctx.accounts.taker_deposit_token_mint.decimals,
+        1,
+        0,
     )?;
 
     token::transfer_checked(
         ctx.accounts
             .into_transfer_to_taker_context()
             .with_signer(&[&authority_seeds[..]]),
-        ctx.accounts.escrow_state.initializer_amount,
-        ctx.accounts.initializer_deposit_token_mint.decimals,
+        1,
+        0,
     )?;
 
     token::close_account(
@@ -52,7 +52,7 @@ pub struct Exchange<'info> {
     pub initializer: AccountInfo<'info>,
     #[account(
         mut,
-        constraint = escrow_state.taker_amount <= taker_deposit_token_account.amount,
+        constraint = 1 == taker_deposit_token_account.amount,
         constraint = escrow_state.initializer_deposit_token_account == *initializer_deposit_token_account.to_account_info().key,
         constraint = escrow_state.initializer_receive_token_account == *initializer_receive_token_account.to_account_info().key,
         constraint = escrow_state.initializer_key == *initializer.key,

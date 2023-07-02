@@ -16,8 +16,8 @@ pub fn cancel(ctx: Context<Cancel>) -> Result<()> {
         ctx.accounts
             .into_transfer_to_initializer_context()
             .with_signer(&[&authority_seeds[..]]),
-        ctx.accounts.escrow_state.initializer_amount,
-        ctx.accounts.mint.decimals,
+        1,
+        0,
     )?;
 
     token::close_account(
