@@ -20,6 +20,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createMint,
   createAccount,
+  getOrCreateAssociatedTokenAccount,
   mintTo,
   getAccount,
 } from "@solana/spl-token";
@@ -48,6 +49,7 @@ describe("anchor-escrow", () => {
   let nftB = null as PublicKey;
 
   const metaplexA = Metaplex.make(connection).use(keypairIdentity(alice));
+  const metaplexB = Metaplex.make(connection).use(keypairIdentity(bob));
 
   before(async () => {
     let res = await connection.requestAirdrop(
@@ -68,19 +70,40 @@ describe("anchor-escrow", () => {
       name: "My NFT A",
       sellerFeeBasisPoints: 500, // Represents 5.00%.
     });
-
-    console.log("nft1", nft1);
-
     nftA = nft1.address;
+    const { nft: nft2 } = await metaplexB.nfts().create({
+      uri: "https://arweave.net/123",
+      name: "My NFT B",
+      sellerFeeBasisPoints: 500, // Represents 5.00%.
+    });
+    nftB = nft2.address;
   });
 
   it("initializes program state", async () => {
     try {
-      let aliceTokenAccountA = await createAccount(
+      let aliceTokenAccountA = await getOrCreateAssociatedTokenAccount(
         connection,
         alice,
         nftA,
         alice.publicKey
+      );
+      let bobTokenAccountA = await getOrCreateAssociatedTokenAccount(
+        connection,
+        bob,
+        nftA,
+        bob.publicKey
+      );
+      let aliceTokenAccountB = await getOrCreateAssociatedTokenAccount(
+        connection,
+        alice,
+        nftB,
+        alice.publicKey
+      );
+      let bobTokenAccountB = await getOrCreateAssociatedTokenAccount(
+        connection,
+        bob,
+        nftB,
+        bob.publicKey
       );
     } catch (err) {
       console.log("err", err);
