@@ -82,6 +82,13 @@ describe("anchor-escrow", () => {
   )[0];
   let vaultKey = null as PublicKey;
 
+  const masterEditionKey = PublicKey.findProgramAddressSync(
+    [Buffer.from(authoritySeed, "utf-8")],
+    program.programId
+  )[0];
+
+  let masterEdition = null;
+
   before(async () => {
     let res = await connection.requestAirdrop(
       alice.publicKey,
@@ -108,6 +115,10 @@ describe("anchor-escrow", () => {
       sellerFeeBasisPoints: 500, // Represents 5.00%.
     });
     nftB = nft2.address;
+
+    masterEdition = await metaplexA.nfts().pdas().masterEdition({ mint: nftA });
+    console.log("nftA", nftA);
+    console.log("masterEdition", masterEdition);
   });
 
   it("initializes program state", async () => {
@@ -166,7 +177,7 @@ describe("anchor-escrow", () => {
           vaultAuthority: vaultAuthorityKey,
           vault: vaultKey,
           mint: nftA,
-          masterEdition: nftA,
+          masterEdition: masterEdition,
           initializerDepositTokenAccount: aliceTokenAccountA,
           initializerReceiveTokenAccount: aliceTokenAccountB,
           escrowState: escrowStateKey,
