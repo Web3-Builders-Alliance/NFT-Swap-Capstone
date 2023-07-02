@@ -139,8 +139,8 @@ describe("anchor-escrow", () => {
       //Alice starts with her NFT and Bob starts with his
       assert.ok(Number(aliceTokenAccountA.amount) == 1);
       assert.ok(Number(aliceTokenAccountB.amount) == 0);
-      assert.ok(Number(bobTokenAccountA.amount) == 1);
-      assert.ok(Number(bobTokenAccountB.amount) == 0);
+      assert.ok(Number(bobTokenAccountA.amount) == 0);
+      assert.ok(Number(bobTokenAccountB.amount) == 1);
     } catch (err) {
       console.log("err", err);
       throw new Error(err);
