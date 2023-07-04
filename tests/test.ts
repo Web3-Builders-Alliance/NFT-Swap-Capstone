@@ -123,9 +123,6 @@ describe("anchor-escrow", () => {
       .nfts()
       .pdas()
       .masterEdition({ mint: nftA });
-
-    console.log("nftA", nftA);
-    console.log("masterEditionA", masterEditionA);
   });
 
   it("initializes program state", async () => {
@@ -159,8 +156,6 @@ describe("anchor-escrow", () => {
       assert.ok(Number(aliceTokenAccountB.amount) == 0);
       assert.ok(Number(bobTokenAccountA.amount) == 0);
       assert.ok(Number(bobTokenAccountB.amount) == 1);
-
-      console.log("aliceTokenAccountA", aliceTokenAccountA);
     } catch (err) {
       console.log("err", err);
       throw new Error(err);
@@ -210,5 +205,43 @@ describe("anchor-escrow", () => {
       console.log("err", err);
       throw new Error(err);
     }
+  });
+
+  it("mint A and mint B must be NFTs", async () => {});
+
+  it("Exchange escrow state", async () => {
+    const result = await program.methods
+      .exchange()
+      .accounts({
+        taker: bob.publicKey,
+        initializerDepositTokenMint: nftA,
+        takerDepositTokenMint: nftB,
+        takerDepositTokenAccount: bobTokenAccountB.address,
+        takerReceiveTokenAccount: bobTokenAccountA.address,
+        initializerDepositTokenAccount: aliceTokenAccountA.address,
+        initializerReceiveTokenAccount: aliceTokenAccountB.address,
+        initializer: alice.publicKey,
+        escrowState: escrowStateKey,
+        vault: vaultKey,
+        vaultAuthority: vaultAuthorityKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([bob])
+      .rpc();
+
+    let aliceNFTAccountA = await getAccount(
+      connection,
+      aliceTokenAccountA.address
+    );
+    let aliceNFTAccountB = await getAccount(
+      connection,
+      aliceTokenAccountB.address
+    );
+    let bobNFTAccountA = await getAccount(connection, bobTokenAccountA.address);
+    let bobNFTAccountB = await getAccount(connection, bobTokenAccountB.address);
+    assert.ok(Number(aliceNFTAccountA.amount) == 0);
+    assert.ok(Number(aliceNFTAccountB.amount) == 1);
+    assert.ok(Number(bobNFTAccountA.amount) == 1);
+    assert.ok(Number(bobNFTAccountB.amount) == 0);
   });
 });
