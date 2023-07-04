@@ -6,6 +6,7 @@ import {
   keypairIdentity,
   bundlrStorage,
 } from "@metaplex-foundation/js";
+import { PROGRAM_ID as METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import {
   PublicKey,
   SystemProgram,
@@ -87,7 +88,7 @@ describe("anchor-escrow", () => {
     program.programId
   )[0];
 
-  let masterEditionA = null;
+  let masterEditionA = null as PublicKey;
 
   before(async () => {
     let res = await connection.requestAirdrop(
@@ -117,10 +118,16 @@ describe("anchor-escrow", () => {
     });
     nftB = nft2.address;
 
-    masterEditionA = await metaplexA
-      .nfts()
-      .pdas()
-      .masterEdition({ mint: nftA });
+    masterEditionA = PublicKey.createProgramAddressSync(
+      [
+        Buffer.from("metadata"),
+        METADATA_PROGRAM_ID.toBuffer(),
+        nftA.toBuffer(),
+        Buffer.from("edition"),
+      ],
+      METADATA_PROGRAM_ID
+    )[0];
+
     console.log("nftA", nftA);
     console.log("masterEditionA", masterEditionA);
   });
@@ -181,13 +188,15 @@ describe("anchor-escrow", () => {
           vaultAuthority: vaultAuthorityKey,
           vault: vaultKey,
           mint: nftA,
-          masterEditionA: masterEditionA,
+          masterEdition: masterEditionA,
           initializerDepositTokenAccount: aliceTokenAccountA,
           initializerReceiveTokenAccount: aliceTokenAccountB,
           escrowState: escrowStateKey,
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
           tokenProgram: TOKEN_PROGRAM_ID,
+          metadataProgram: METADATA_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
         .signers([initializer])
         .rpc();
