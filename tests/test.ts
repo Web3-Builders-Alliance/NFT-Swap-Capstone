@@ -24,6 +24,7 @@ import {
   getOrCreateAssociatedTokenAccount,
   mintTo,
   getAccount,
+  Account,
 } from "@solana/spl-token";
 import { assert } from "chai";
 
@@ -53,10 +54,10 @@ describe("anchor-escrow", () => {
   const metaplexA = Metaplex.make(connection).use(keypairIdentity(alice));
   const metaplexB = Metaplex.make(connection).use(keypairIdentity(bob));
 
-  let aliceTokenAccountA = null;
-  let bobTokenAccountA = null;
-  let aliceTokenAccountB = null;
-  let bobTokenAccountB = null;
+  let aliceTokenAccountA: Account;
+  let bobTokenAccountA: Account;
+  let aliceTokenAccountB: Account;
+  let bobTokenAccountB: Account;
 
   // Determined Seeds
   const stateSeed = "state";
@@ -90,7 +91,7 @@ describe("anchor-escrow", () => {
 
   let masterEditionA = null as PublicKey;
 
-  before(async () => {
+  it("works", async () => {
     let res = await connection.requestAirdrop(
       alice.publicKey,
       100 * anchor.web3.LAMPORTS_PER_SOL
@@ -118,15 +119,10 @@ describe("anchor-escrow", () => {
     });
     nftB = nft2.address;
 
-    masterEditionA = PublicKey.createProgramAddressSync(
-      [
-        Buffer.from("metadata"),
-        METADATA_PROGRAM_ID.toBuffer(),
-        nftA.toBuffer(),
-        Buffer.from("edition"),
-      ],
-      METADATA_PROGRAM_ID
-    )[0];
+    masterEditionA = await metaplexA
+      .nfts()
+      .pdas()
+      .masterEdition({ mint: nftA });
 
     console.log("nftA", nftA);
     console.log("masterEditionA", masterEditionA);
@@ -163,6 +159,8 @@ describe("anchor-escrow", () => {
       assert.ok(Number(aliceTokenAccountB.amount) == 0);
       assert.ok(Number(bobTokenAccountA.amount) == 0);
       assert.ok(Number(bobTokenAccountB.amount) == 1);
+
+      console.log("aliceTokenAccountA", aliceTokenAccountA);
     } catch (err) {
       console.log("err", err);
       throw new Error(err);
@@ -185,12 +183,12 @@ describe("anchor-escrow", () => {
         .initialize(randomSeed, nftA, nftB)
         .accounts({
           initializer: initializer.publicKey,
+          mint: nftA,
           vaultAuthority: vaultAuthorityKey,
           vault: vaultKey,
-          mint: nftA,
           masterEdition: masterEditionA,
-          initializerDepositTokenAccount: aliceTokenAccountA,
-          initializerReceiveTokenAccount: aliceTokenAccountB,
+          initializerDepositTokenAccount: aliceTokenAccountA.address,
+          initializerReceiveTokenAccount: aliceTokenAccountB.address,
           escrowState: escrowStateKey,
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,

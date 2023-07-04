@@ -60,14 +60,7 @@ pub struct Initialize<'info> {
         seeds::program = Metadata::id(),
         bump,
     )]
-    #[account(constraint = master_edition.supply > 0)]
     pub master_edition: Account<'info, MasterEditionAccount>,
-    // #[account(
-    //     seeds = [b"metadata",  metadata_program.key().as_ref(), mint.key().as_ref(), b"edition" ],
-    //     bump,
-    //     seeds::program =  metadata_program
-    // )]
-    // pub master_edition: Account<'info, MasterEditionAccount>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(
         seeds = [AUTHORITY_SEED],

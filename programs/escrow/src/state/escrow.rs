@@ -13,6 +13,6 @@ pub struct EscrowState {
 
 impl EscrowState {
     pub fn space() -> usize {
-        8 + 121
+        8 + 8 + 5 * 32 + 1
     }
 }
