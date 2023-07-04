@@ -1,5 +1,6 @@
 use crate::seeds::*;
 use crate::state::*;
+use mpl_token_metadata::state;
 
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
@@ -55,11 +56,18 @@ pub struct Initialize<'info> {
     pub initializer: Signer<'info>,
     pub mint: Account<'info, Mint>,
     #[account(
-        seeds = [b"metadata",  metadata_program.key().as_ref(), mint.key().as_ref(), b"edition" ],
+        seeds = [state::PREFIX.as_bytes(), Metadata::id().as_ref(), mint.key().as_ref(), state::EDITION.as_bytes()],
+        seeds::program = Metadata::id(),
         bump,
-        seeds::program =  metadata_program
     )]
+    #[account(constraint = master_edition.supply > 0)]
     pub master_edition: Account<'info, MasterEditionAccount>,
+    // #[account(
+    //     seeds = [b"metadata",  metadata_program.key().as_ref(), mint.key().as_ref(), b"edition" ],
+    //     bump,
+    //     seeds::program =  metadata_program
+    // )]
+    // pub master_edition: Account<'info, MasterEditionAccount>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(
         seeds = [AUTHORITY_SEED],

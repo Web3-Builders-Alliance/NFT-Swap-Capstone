@@ -21,3 +21,4 @@ anchor-spl = { git = "https://github.com/coral-xyz/anchor.git", features=["metad
 spl-token = {version = "3.3.0", features = ["no-entrypoint"]}
 winnow = "= 0.4.1"
 toml_datetime = "=0.6.1"
+mpl-token-metadata = { version = "1.11", features = ["no-entrypoint"] }

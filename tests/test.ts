@@ -87,7 +87,7 @@ describe("anchor-escrow", () => {
     program.programId
   )[0];
 
-  let masterEdition = null;
+  let masterEditionA = null;
 
   before(async () => {
     let res = await connection.requestAirdrop(
@@ -108,6 +108,7 @@ describe("anchor-escrow", () => {
       name: "My NFT A",
       sellerFeeBasisPoints: 500, // Represents 5.00%.
     });
+    console.log("nft1", nft1);
     nftA = nft1.address;
     const { nft: nft2 } = await metaplexB.nfts().create({
       uri: "https://arweave.net/123",
@@ -116,9 +117,12 @@ describe("anchor-escrow", () => {
     });
     nftB = nft2.address;
 
-    masterEdition = await metaplexA.nfts().pdas().masterEdition({ mint: nftA });
+    masterEditionA = await metaplexA
+      .nfts()
+      .pdas()
+      .masterEdition({ mint: nftA });
     console.log("nftA", nftA);
-    console.log("masterEdition", masterEdition);
+    console.log("masterEditionA", masterEditionA);
   });
 
   it("initializes program state", async () => {
@@ -177,7 +181,7 @@ describe("anchor-escrow", () => {
           vaultAuthority: vaultAuthorityKey,
           vault: vaultKey,
           mint: nftA,
-          masterEdition: masterEdition,
+          masterEditionA: masterEditionA,
           initializerDepositTokenAccount: aliceTokenAccountA,
           initializerReceiveTokenAccount: aliceTokenAccountB,
           escrowState: escrowStateKey,
