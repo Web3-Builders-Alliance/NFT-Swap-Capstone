@@ -26,7 +26,11 @@ import {
   getAccount,
   Account,
 } from "@solana/spl-token";
-import { assert } from "chai";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+
+const { assert, expect } = chai;
+chai.use(chaiAsPromised);
 
 const fs = require("fs");
 
@@ -209,6 +213,43 @@ describe("anchor-escrow", () => {
 
   it("mint A and mint B must be NFTs", async () => {});
 
+  it("taker must submit correct NFT", async () => {
+    async function tryWrongNFT() {
+      try {
+        //mint wrong nft to bob
+        const { nft } = await metaplexB.nfts().create({
+          uri: "https://arweave.net/123",
+          name: "My NFT E",
+          sellerFeeBasisPoints: 500,
+        });
+        let nftE = nft.address;
+
+        const result = await program.methods
+          .exchange()
+          .accounts({
+            taker: bob.publicKey,
+            initializerDepositTokenMint: nftA,
+            takerDepositTokenMint: nftE,
+            takerDepositTokenAccount: bobTokenAccountB.address,
+            takerReceiveTokenAccount: bobTokenAccountA.address,
+            initializerDepositTokenAccount: aliceTokenAccountA.address,
+            initializerReceiveTokenAccount: aliceTokenAccountB.address,
+            initializer: alice.publicKey,
+            escrowState: escrowStateKey,
+            vault: vaultKey,
+            vaultAuthority: vaultAuthorityKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .signers([bob])
+          .rpc();
+        console.log("result", result);
+      } catch (err) {
+        throw new Error("Wrong NFT");
+      }
+    }
+    expect(tryWrongNFT()).to.eventually.throw("Wrong NFT");
+  });
+
   it("Exchange escrow state", async () => {
     const result = await program.methods
       .exchange()
@@ -254,7 +295,7 @@ describe("anchor-escrow", () => {
     });
     let nftC = nft1.address;
 
-    const { nft: nft2 } = await metaplexA.nfts().create({
+    const { nft: nft2 } = await metaplexB.nfts().create({
       uri: "https://arweave.net/123",
       name: "My NFT D",
       sellerFeeBasisPoints: 500, // Represents 5.00%.
@@ -310,7 +351,6 @@ describe("anchor-escrow", () => {
       .signers([alice])
       .rpc();
 
-    console.log("initializedTx", initializedTx);
     // Cancel the escrow.
     const canceledTX = await program.methods
       .cancel()
@@ -325,18 +365,20 @@ describe("anchor-escrow", () => {
       })
       .signers([alice])
       .rpc();
-    console.log(
-      `https://solana.fm/tx/${canceledTX}?cluster=http%253A%252F%252Flocalhost%253A8899%252F`
-    );
 
     let aliceNFTAccountC = await getAccount(
       connection,
       aliceTokenAccountC.address
     );
-    console.log("aliceNFTAccountC", aliceNFTAccountC);
     assert.ok(aliceNFTAccountC.owner.equals(alice.publicKey));
     // Check alice still owns the NFT.
     assert.ok(Number(aliceNFTAccountC.amount) == 1);
-    assert.ok(Number(aliceNFTAccountC.amount) == 1);
+
+    let aliceNFTAccountD = await getAccount(
+      connection,
+      aliceTokenAccountD.address
+    );
+    assert.ok(aliceNFTAccountD.owner.equals(alice.publicKey));
+    assert.ok(Number(aliceNFTAccountD.amount) == 0);
   });
 });
