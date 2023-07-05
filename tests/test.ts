@@ -177,7 +177,7 @@ describe("anchor-escrow", () => {
       const result = await program.methods
         .initialize(randomSeed, nftA, nftB)
         .accounts({
-          initializer: initializer.publicKey,
+          initializer: alice.publicKey,
           mint: nftA,
           vaultAuthority: vaultAuthorityKey,
           vault: vaultKey,
@@ -191,7 +191,7 @@ describe("anchor-escrow", () => {
           metadataProgram: METADATA_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
-        .signers([initializer])
+        .signers([alice])
         .rpc();
       console.log(
         `https://solana.fm/tx/${result}?cluster=http%253A%252F%252Flocalhost%253A8899%252F`
@@ -243,5 +243,100 @@ describe("anchor-escrow", () => {
     assert.ok(Number(aliceNFTAccountB.amount) == 1);
     assert.ok(Number(bobNFTAccountA.amount) == 1);
     assert.ok(Number(bobNFTAccountB.amount) == 0);
+  });
+
+  it("initializes and cancels", async () => {
+    //create new NFTs and accounts
+    const { nft: nft1 } = await metaplexA.nfts().create({
+      uri: "https://arweave.net/123",
+      name: "My NFT C",
+      sellerFeeBasisPoints: 500, // Represents 5.00%.
+    });
+    let nftC = nft1.address;
+
+    const { nft: nft2 } = await metaplexA.nfts().create({
+      uri: "https://arweave.net/123",
+      name: "My NFT D",
+      sellerFeeBasisPoints: 500, // Represents 5.00%.
+    });
+    let nftD = nft2.address;
+
+    const _vaultKey = PublicKey.findProgramAddressSync(
+      [
+        vaultAuthorityKey.toBuffer(),
+        TOKEN_PROGRAM_ID.toBuffer(),
+        nftC.toBuffer(),
+      ],
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    )[0];
+    vaultKey = _vaultKey;
+
+    masterEditionA = await metaplexA
+      .nfts()
+      .pdas()
+      .masterEdition({ mint: nftC });
+
+    let aliceTokenAccountC = await getOrCreateAssociatedTokenAccount(
+      connection,
+      alice,
+      nftC,
+      alice.publicKey
+    );
+
+    let aliceTokenAccountD = await getOrCreateAssociatedTokenAccount(
+      connection,
+      alice,
+      nftD,
+      alice.publicKey
+    );
+
+    const initializedTx = await program.methods
+      .initialize(randomSeed, nftC, nftB)
+      .accounts({
+        initializer: alice.publicKey,
+        mint: nftC,
+        vaultAuthority: vaultAuthorityKey,
+        vault: vaultKey,
+        masterEdition: masterEditionA,
+        initializerDepositTokenAccount: aliceTokenAccountC.address,
+        initializerReceiveTokenAccount: aliceTokenAccountD.address,
+        escrowState: escrowStateKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        metadataProgram: METADATA_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      })
+      .signers([alice])
+      .rpc();
+
+    console.log("initializedTx", initializedTx);
+    // Cancel the escrow.
+    const canceledTX = await program.methods
+      .cancel()
+      .accounts({
+        initializer: alice.publicKey,
+        mint: nftC,
+        vault: vaultKey,
+        vaultAuthority: vaultAuthorityKey,
+        initializerDepositTokenAccount: aliceTokenAccountC.address,
+        escrowState: escrowStateKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([alice])
+      .rpc();
+    console.log(
+      `https://solana.fm/tx/${canceledTX}?cluster=http%253A%252F%252Flocalhost%253A8899%252F`
+    );
+
+    let aliceNFTAccountC = await getAccount(
+      connection,
+      aliceTokenAccountC.address
+    );
+    console.log("aliceNFTAccountC", aliceNFTAccountC);
+    assert.ok(aliceNFTAccountC.owner.equals(alice.publicKey));
+    // Check alice still owns the NFT.
+    assert.ok(Number(aliceNFTAccountC.amount) == 1);
+    assert.ok(Number(aliceNFTAccountC.amount) == 1);
   });
 });
