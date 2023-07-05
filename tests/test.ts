@@ -41,6 +41,7 @@ const bobKey = require("./bob.json");
 
 describe("anchor-escrow", () => {
   let provider = anchor.AnchorProvider.local("http://127.0.0.1:8899");
+
   const { connection } = provider;
   const programId = new PublicKey(
     "G9yTenWDLBYm1ayZ7gprRhjCS5BuWcn9tVa394Utr1jL"
@@ -80,7 +81,6 @@ describe("anchor-escrow", () => {
     ],
     program.programId
   )[0];
-  console.log("escrowStateKey", escrowStateKey);
 
   const vaultAuthorityKey = PublicKey.findProgramAddressSync(
     [Buffer.from(authoritySeed, "utf-8")],
@@ -114,7 +114,6 @@ describe("anchor-escrow", () => {
       name: "My NFT A",
       sellerFeeBasisPoints: 500, // Represents 5.00%.
     });
-    console.log("nft1", nft1);
     nftA = nft1.address;
     const { nft: nft2 } = await metaplexB.nfts().create({
       uri: "https://arweave.net/123",
@@ -161,9 +160,62 @@ describe("anchor-escrow", () => {
       assert.ok(Number(bobTokenAccountA.amount) == 0);
       assert.ok(Number(bobTokenAccountB.amount) == 1);
     } catch (err) {
-      console.log("err", err);
       throw new Error(err);
     }
+  });
+
+  it("mint A and mint B must be NFTs", async () => {
+    let tokenMint = await createMint(
+      connection,
+      alice,
+      alice.publicKey,
+      null,
+      0
+    );
+
+    let aliceTokenAccount = await createAccount(
+      connection,
+      alice,
+      tokenMint,
+      alice.publicKey
+    );
+
+    await mintTo(connection, alice, tokenMint, aliceTokenAccount, alice, 100);
+
+    const tokenVaultKey = PublicKey.findProgramAddressSync(
+      [
+        vaultAuthorityKey.toBuffer(),
+        TOKEN_PROGRAM_ID.toBuffer(),
+        nftA.toBuffer(),
+      ],
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    )[0];
+    async function tryRegularToken() {
+      try {
+        const result = await program.methods
+          .initialize(randomSeed, tokenMint, nftB)
+          .accounts({
+            initializer: alice.publicKey,
+            mint: tokenMint,
+            vaultAuthority: vaultAuthorityKey,
+            vault: tokenVaultKey,
+            masterEdition: masterEditionA,
+            initializerDepositTokenAccount: aliceTokenAccountA.address,
+            initializerReceiveTokenAccount: aliceTokenAccountB.address,
+            escrowState: escrowStateKey,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            metadataProgram: METADATA_PROGRAM_ID,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          })
+          .signers([alice])
+          .rpc();
+      } catch (err) {
+        throw new Error("Token must be NFT");
+      }
+    }
+    expect(tryRegularToken()).to.eventually.throw("Token must be NFT");
   });
 
   it("Initializes escrow", async () => {
@@ -197,21 +249,15 @@ describe("anchor-escrow", () => {
         })
         .signers([alice])
         .rpc();
-      console.log(
-        `https://solana.fm/tx/${result}?cluster=http%253A%252F%252Flocalhost%253A8899%252F`
-      );
 
       let fetchedVault = await getAccount(connection, vaultKey);
       let fetchedEscrowState = await program.account.escrowState.fetch(
         escrowStateKey
       );
     } catch (err) {
-      console.log("err", err);
       throw new Error(err);
     }
   });
-
-  it("mint A and mint B must be NFTs", async () => {});
 
   it("taker must submit correct NFT", async () => {
     async function tryWrongNFT() {
