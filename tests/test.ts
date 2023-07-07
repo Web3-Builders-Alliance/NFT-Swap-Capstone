@@ -40,11 +40,12 @@ const aliceKey = require("./alice.json");
 const bobKey = require("./bob.json");
 
 describe("anchor-escrow", () => {
-  let provider = anchor.AnchorProvider.local("http://127.0.0.1:8899");
+  const provider = anchor.AnchorProvider.env();
+  // let provider = anchor.AnchorProvider.local("http://127.0.0.1:8899");
 
   const { connection } = provider;
   const programId = new PublicKey(
-    "G9yTenWDLBYm1ayZ7gprRhjCS5BuWcn9tVa394Utr1jL"
+    "9FmWRCsKPpFsUxcs9nV2K4GVgHTnVXeEfT4uMK3vuurL"
   );
   const program = new anchor.Program(IDL, programId, provider);
 
@@ -96,29 +97,29 @@ describe("anchor-escrow", () => {
   let masterEditionA = null as PublicKey;
 
   it("works", async () => {
-    let res = await connection.requestAirdrop(
-      alice.publicKey,
-      100 * anchor.web3.LAMPORTS_PER_SOL
-    );
+    // let res = await connection.requestAirdrop(
+    //   alice.publicKey,
+    //   100 * anchor.web3.LAMPORTS_PER_SOL
+    // );
 
-    let latestBlockHash = await connection.getLatestBlockhash();
+    // let latestBlockHash = await connection.getLatestBlockhash();
 
-    await connection.confirmTransaction({
-      blockhash: latestBlockHash.blockhash,
-      lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-      signature: res,
-    });
+    // await connection.confirmTransaction({
+    //   blockhash: latestBlockHash.blockhash,
+    //   lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+    //   signature: res,
+    // });
 
     const { nft: nft1 } = await metaplexA.nfts().create({
       uri: "https://arweave.net/123",
       name: "My NFT A",
-      sellerFeeBasisPoints: 500, // Represents 5.00%.
+      sellerFeeBasisPoints: 500,
     });
     nftA = nft1.address;
     const { nft: nft2 } = await metaplexB.nfts().create({
       uri: "https://arweave.net/123",
       name: "My NFT B",
-      sellerFeeBasisPoints: 500, // Represents 5.00%.
+      sellerFeeBasisPoints: 500,
     });
     nftB = nft2.address;
 
