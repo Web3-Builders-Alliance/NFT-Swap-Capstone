@@ -51,7 +51,6 @@ describe("anchor-escrow", () => {
 
   // Main Roles
   const alice = Keypair.fromSecretKey(new Uint8Array(aliceKey));
-  const initializer = Keypair.fromSecretKey(new Uint8Array(aliceKey));
   const bob = Keypair.fromSecretKey(new Uint8Array(bobKey));
 
   let nftA = null as PublicKey;
@@ -89,14 +88,9 @@ describe("anchor-escrow", () => {
   )[0];
   let vaultKey = null as PublicKey;
 
-  const masterEditionKey = PublicKey.findProgramAddressSync(
-    [Buffer.from(authoritySeed, "utf-8")],
-    program.programId
-  )[0];
-
   let masterEditionA = null as PublicKey;
 
-  it("works", async () => {
+  before(async () => {
     // let res = await connection.requestAirdrop(
     //   alice.publicKey,
     //   100 * anchor.web3.LAMPORTS_PER_SOL
