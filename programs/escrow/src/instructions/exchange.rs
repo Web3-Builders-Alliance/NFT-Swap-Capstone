@@ -1,5 +1,7 @@
-use crate::state::escrow::*;
 use crate::seeds::*;
+use crate::state::escrow::*;
+use anchor_spl::metadata::{MasterEditionAccount, Metadata};
+use mpl_token_metadata::state;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, TransferChecked};
@@ -10,11 +12,7 @@ pub fn exchange(ctx: Context<Exchange>) -> Result<()> {
         &[ctx.accounts.escrow_state.vault_authority_bump],
     ];
 
-    token::transfer_checked(
-        ctx.accounts.into_transfer_to_initializer_context(),
-        1,
-        0,
-    )?;
+    token::transfer_checked(ctx.accounts.into_transfer_to_initializer_context(), 1, 0)?;
 
     token::transfer_checked(
         ctx.accounts
@@ -39,6 +37,12 @@ pub struct Exchange<'info> {
     pub taker: Signer<'info>,
     pub initializer_deposit_token_mint: Account<'info, Mint>,
     pub taker_deposit_token_mint: Account<'info, Mint>,
+    #[account(
+        seeds = [state::PREFIX.as_bytes(), Metadata::id().as_ref(), taker_deposit_token_mint.key().as_ref(), state::EDITION.as_bytes()],
+        seeds::program = Metadata::id(),
+        bump,
+    )]
+    pub master_edition: Account<'info, MasterEditionAccount>,
     #[account(mut)]
     pub taker_deposit_token_account: Box<Account<'info, TokenAccount>>,
     #[account(mut)]

@@ -1,11 +1,11 @@
 use crate::seeds::*;
 use crate::state::*;
-use mpl_token_metadata::state;
 
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::metadata::{MasterEditionAccount, Metadata};
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+use mpl_token_metadata::state;
 
 pub fn initialize(
     ctx: Context<Initialize>,

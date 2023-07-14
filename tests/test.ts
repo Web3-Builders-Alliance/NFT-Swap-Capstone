@@ -89,6 +89,7 @@ describe("anchor-escrow", () => {
   let vaultKey = null as PublicKey;
 
   let masterEditionA = null as PublicKey;
+  let masterEditionB = null as PublicKey;
 
   before(async () => {
     // let res = await connection.requestAirdrop(
@@ -121,6 +122,11 @@ describe("anchor-escrow", () => {
       .nfts()
       .pdas()
       .masterEdition({ mint: nftA });
+
+    masterEditionB = await metaplexA
+      .nfts()
+      .pdas()
+      .masterEdition({ mint: nftB });
   });
 
   it("initializes program state", async () => {
@@ -298,6 +304,7 @@ describe("anchor-escrow", () => {
         taker: bob.publicKey,
         initializerDepositTokenMint: nftA,
         takerDepositTokenMint: nftB,
+        masterEdition: masterEditionB,
         takerDepositTokenAccount: bobTokenAccountB.address,
         takerReceiveTokenAccount: bobTokenAccountA.address,
         initializerDepositTokenAccount: aliceTokenAccountA.address,
