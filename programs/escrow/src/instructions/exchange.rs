@@ -1,10 +1,10 @@
 use crate::seeds::*;
 use crate::state::escrow::*;
-use anchor_spl::metadata::{MasterEditionAccount, Metadata};
-use mpl_token_metadata::state;
-
 use anchor_lang::prelude::*;
+use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::metadata::{MasterEditionAccount, Metadata};
 use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, TransferChecked};
+use mpl_token_metadata::state;
 
 pub fn exchange(ctx: Context<Exchange>) -> Result<()> {
     let authority_seeds = &[
@@ -34,6 +34,7 @@ pub fn exchange(ctx: Context<Exchange>) -> Result<()> {
 #[derive(Accounts)]
 pub struct Exchange<'info> {
     /// CHECK: This is not dangerous because we don't read or write from this account
+    #[account(mut)]
     pub taker: Signer<'info>,
     pub initializer_deposit_token_mint: Account<'info, Mint>,
     pub taker_deposit_token_mint: Account<'info, Mint>,
@@ -45,11 +46,21 @@ pub struct Exchange<'info> {
     pub master_edition: Account<'info, MasterEditionAccount>,
     #[account(mut)]
     pub taker_deposit_token_account: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
+    #[account(
+        init_if_needed,
+        payer = taker,
+        associated_token::mint = initializer_deposit_token_mint,
+        associated_token::authority = taker
+    )]
     pub taker_receive_token_account: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub initializer_deposit_token_account: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
+    #[account(
+        init_if_needed,
+        payer = taker,
+        associated_token::mint = taker_deposit_token_mint,
+        associated_token::authority = initializer
+    )]
     pub initializer_receive_token_account: Box<Account<'info, TokenAccount>>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(mut)]
@@ -73,6 +84,8 @@ pub struct Exchange<'info> {
     pub vault_authority: AccountInfo<'info>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
 impl<'info> Exchange<'info> {
